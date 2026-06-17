@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Головна — Kettlebell Tracker{% endblock %}
+
+{% block content %}
+
+<!-- === PAGE HEADER === -->
+<div style="margin-bottom: 2.5rem;">
+  <span class="kb-eyebrow">Панель керування</span>
+  <h1>Привіт, Олег</h1>
+  <p style="margin: 0;">
+    {% if last_workout %}
+    Останнє тренування — <strong style="color: var(--chalk);">{{ last_workout.actual_date.strftime('%d %b %Y')
+      }}</strong>.
+    Продовжуй рухатись.
+    {% else %}
+    Ще жодного тренування не записано. Час розпочати.
+    {% endif %}
+  </p>
+</div>
+
+<!-- === STATS ROW === -->
+<div class="kb-stats-grid">
+
+  <div class="kb-stat-card">
+    <span class="kb-stat-label">Всього тренувань</span>
+    <span class="kb-stat-value kb-stat-value--amber">{{ stats.total_workouts }}</span>
+    <span class="kb-stat-sub">виконаних сесій</span>
+  </div>
+
+  <div class="kb-stat-card">
+    <span class="kb-stat-label">Цього місяця</span>
+    <span class="kb-stat-value">{{ stats.this_month }}</span>
+    <span class="kb-stat-sub">{{ stats.month_name }}</span>
+  </div>
+
+  <div class="kb-stat-card">
+    <span class="kb-stat-label">Підходів виконано</span>
+    <span class="kb-stat-value">{{ stats.total_sets }}</span>
+    <span class="kb-stat-sub">загалом по всіх сесіях</span>
+  </div>
+
+  <div class="kb-stat-card">
+    <span class="kb-stat-label">Активних планів</span>
+    <span class="kb-stat-value">{{ stats.active_plans }}</span>
+    <span class="kb-stat-sub">в черзі на виконання</span>
+  </div>
+
+</div>
+
+<!-- === QUICK ACTIONS === -->
+<div class="kb-section-header">
+  <span class="kb-eyebrow" style="margin:0;">Швидкий старт</span>
+</div>
+
+<div class="kb-actions-grid" style="margin-bottom: 3rem;">
+
+  <a href="{{ url_for('workouts_new') }}" class="kb-action-btn kb-action-btn--primary">
+    <span class="kb-action-icon">⚡</span>
+    <span class="kb-action-text">
+      <span class="kb-action-title">Записати тренування</span>
+      <span class="kb-action-desc">Зафіксувати виконану сесію прямо зараз</span>
+    </span>
+  </a>
+
+  <a href="{{ url_for('plans') }}" class="kb-action-btn">
+    <span class="kb-action-icon">📋</span>
+    <span class="kb-action-text">
+      <span class="kb-action-title">Плани тренувань</span>
+      <span class="kb-action-desc">Переглянути або створити новий план</span>
+    </span>
+  </a>
+
+  <a href="{{ url_for('workouts') }}" class="kb-action-btn">
+    <span class="kb-action-icon">📖</span>
+    <span class="kb-action-text">
+      <span class="kb-action-title">Журнал</span>
+      <span class="kb-action-desc">Всі виконані тренування та підходи</span>
+    </span>
+  </a>
+
+  <a href="/dash/" class="kb-action-btn">
+    <span class="kb-action-icon">📈</span>
+    <span class="kb-action-text">
+      <span class="kb-action-title">Дашборд</span>
+      <span class="kb-action-desc">Аналітика прогресу та графіки</span>
+    </span>
+  </a>
+
+</div>
+
+<!-- === LAST WORKOUT === -->
+<div class="kb-section-header">
+  <h2>Останнє тренування</h2>
+</div>
+
+{% if last_workout %}
+<div class="kb-last-workout">
+  <div class="kb-last-workout__header">
+    <div>
+      <h3 class="kb-last-workout__title">
+        {% if last_workout.workout_plan %}
+        {{ last_workout.workout_plan.title }}
+        {% else %}
+        Вільне тренування
+        {% endif %}
+      </h3>
+      <span style="color: var(--chalk-dim); font-size: 0.85rem;">
+        {{ last_workout.actual_date.strftime('%A, %d %B %Y — %H:%M') }}
+      </span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      {% if last_workout.status %}
+      <span class="kb-badge kb-badge--{{ last_workout.status }}">
+        {% if last_workout.status == 'completed' %}Виконано
+        {% elif last_workout.status == 'skipped' %}Пропущено
+        {% else %}{{ last_workout.status }}{% endif %}
+      </span>
+      {% endif %}
+      <a href="{{ url_for('workout_detail', workout_id=last_workout.id) }}" class="kb-btn kb-btn--ghost">
+        Детально →
+      </a>
+    </div>
+  </div>
+
+  {% if last_workout.actual_sets %}
+  <div class="kb-exercise-list">
+    <!-- Table header -->
+    <div class="kb-exercise-row" style="padding-top:0;">
+      <span
+        style="font-family:var(--font-display); font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--chalk-dim);">Вправа</span>
+      <span
+        style="font-family:var(--font-display); font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--chalk-dim);">Підходи</span>
+      <span
+        style="font-family:var(--font-display); font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--chalk-dim);">Повтори</span>
+      <span
+        style="font-family:var(--font-display); font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--chalk-dim);">Вага</span>
+    </div>
+    {% for fact in last_workout.actual_sets %}
+    <div class="kb-exercise-row">
+      <span class="kb-exercise-name">{{ fact.exercise.name_ua }}</span>
+      <span class="kb-exercise-detail">{{ fact.number_approaches }}×</span>
+      <span class="kb-exercise-detail">{{ fact.repeat_exercise }} повт.</span>
+      <span class="kb-exercise-weight">
+        {% if fact.weight and fact.weight.weight_value > 0 %}
+        {{ fact.weight.weight_value | int }} кг
+        {% else %}
+        Власна вага
+        {% endif %}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if last_workout.notes %}
+  <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--steel);">
+    <span class="kb-eyebrow" style="display:inline;">Нотатки:</span>
+    <span style="color: var(--chalk-dim); font-size: 0.88rem; margin-left: 0.5rem;">{{ last_workout.notes }}</span>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <p style="color: var(--chalk-dim); margin: 0;">У цьому тренуванні не записано жодного підходу.</p>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="kb-empty">
+  <h3>Жодного тренування ще не виконано</h3>
+  <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">
+    Почни з плану або запиши вільне тренування просто зараз.
+  </p>
+  <a href="{{ url_for('workouts_new') }}" class="kb-btn kb-btn--primary">
+    Записати перше тренування
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

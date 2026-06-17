@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Тренування {{ workout.actual_date.strftime('%d.%m.%Y') }} — Kettlebell Tracker{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom: 1.5rem;">
+  <a href="{{ url_for('workouts') }}" class="kb-btn kb-btn--ghost" style="font-size: 0.78rem; padding: 0.35rem 0.9rem;">
+    ← Назад до журналу
+  </a>
+</div>
+
+<div class="kb-section-header">
+  <div>
+    <span class="kb-eyebrow">{{ workout.actual_date.strftime('%A, %d %B %Y') }}</span>
+    <h1 style="margin:0;">
+      {% if workout.workout_plan %}
+        {{ workout.workout_plan.title }}
+      {% else %}
+        Вільне тренування
+      {% endif %}
+    </h1>
+  </div>
+  {% if workout.status %}
+    <span class="kb-badge kb-badge--{{ workout.status }}" style="font-size: 0.85rem; padding: 6px 14px;">
+      {% if workout.status == 'completed' %}Виконано
+      {% elif workout.status == 'skipped' %}Пропущено
+      {% else %}{{ workout.status }}{% endif %}
+    </span>
+  {% endif %}
+</div>
+
+{% if workout.notes %}
+<div class="kb-card" style="margin-bottom: 2rem;">
+  <span class="kb-eyebrow">Нотатки</span>
+  <p style="margin: 0; color: var(--chalk);">{{ workout.notes }}</p>
+</div>
+{% endif %}
+
+<h2>Виконані підходи</h2>
+
+{% if workout.actual_sets %}
+  <div style="background: var(--forge); border: 1px solid var(--steel); border-radius: var(--radius-lg); overflow: hidden;">
+    <table class="kb-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Вправа</th>
+          <th>Підходи</th>
+          <th>Повтори</th>
+          <th>Вага</th>
+          <th>Об'єм</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fact in workout.actual_sets %}
+        <tr>
+          <td style="color: var(--chalk-dim); font-family: var(--font-display); font-size: 0.8rem;">
+            {{ loop.index }}
+          </td>
+          <td>
+            <span style="color: var(--chalk);">{{ fact.exercise.name_ua }}</span>
+            <br>
+            <span style="color: var(--chalk-dim); font-size: 0.75rem;">{{ fact.exercise.name_en }}</span>
+          </td>
+          <td style="font-family: var(--font-display);">{{ fact.number_approaches }}×</td>
+          <td style="font-family: var(--font-display);">{{ fact.repeat_exercise }}</td>
+          <td>
+            {% if fact.weight and fact.weight.weight_value > 0 %}
+              <span style="color: var(--amber); font-family: var(--font-display); font-weight: 600;">
+                {{ fact.weight.weight_value | int }} кг
+              </span>
+            {% else %}
+              <span style="color: var(--chalk-dim);">Власна вага</span>
+            {% endif %}
+          </td>
+          <td style="color: var(--chalk-dim); font-family: var(--font-display);">
+            {% if fact.weight and fact.weight.weight_value > 0 %}
+              {{ (fact.number_approaches * fact.repeat_exercise * fact.weight.weight_value) | int }} кг
+            {% else %}
+              {{ fact.number_approaches * fact.repeat_exercise }} повт.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Totals -->
+  {% set total_sets = workout.actual_sets | sum(attribute='number_approaches') %}
+  {% set total_reps = workout.actual_sets | sum(attribute='repeat_exercise') %}
+  <div class="kb-stats-grid" style="margin-top: 1.5rem;">
+    <div class="kb-stat-card">
+      <span class="kb-stat-label">Підходів</span>
+      <span class="kb-stat-value kb-stat-value--amber">{{ total_sets }}</span>
+    </div>
+    <div class="kb-stat-card">
+      <span class="kb-stat-label">Вправ</span>
+      <span class="kb-stat-value">{{ workout.actual_sets | length }}</span>
+    </div>
+    <div class="kb-stat-card">
+      <span class="kb-stat-label">Час початку</span>
+      <span class="kb-stat-value" style="font-size: 1.6rem;">{{ workout.actual_date.strftime('%H:%M') }}</span>
+    </div>
+  </div>
+
+{% else %}
+  <div class="kb-empty">
+    <h3>Підходи не записані</h3>
+    <p style="font-size: 0.85rem;">У цій сесії немає зафіксованих підходів.</p>
+  </div>
+{% endif %}
+
+{% endblock %}

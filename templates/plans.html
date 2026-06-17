@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Плани тренувань — Kettlebell Tracker{% endblock %}
+
+{% block content %}
+
+<div class="kb-section-header">
+  <div>
+    <span class="kb-eyebrow">Заплановані сесії</span>
+    <h1 style="margin:0;">Плани тренувань</h1>
+  </div>
+  <a href="{{ url_for('plans') }}#new" class="kb-btn kb-btn--primary" style="margin-left:auto;">
+    + Новий план
+  </a>
+</div>
+
+{% if plans %}
+  <div style="display: grid; gap: 1rem;">
+    {% for plan in plans %}
+    <div class="kb-card kb-card--accent">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+        <div>
+          <h3 style="margin-bottom: 0.25rem;">{{ plan.title }}</h3>
+          <span style="font-size: 0.82rem; color: var(--chalk-dim);">
+            {% if plan.planned_date %}
+              📅 {{ plan.planned_date.strftime('%d.%m.%Y') }}
+            {% else %}
+              Без конкретної дати
+            {% endif %}
+            &nbsp;&bull;&nbsp;
+            Створено {{ plan.created_at.strftime('%d.%m.%Y') }}
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          {% if plan.status %}
+            <span class="kb-badge kb-badge--{{ plan.status }}">
+              {% if plan.status == 'active' %}Активний
+              {% elif plan.status == 'completed' %}Виконано
+              {% else %}{{ plan.status }}{% endif %}
+            </span>
+          {% endif %}
+          <a href="#" class="kb-btn kb-btn--ghost" style="font-size: 0.75rem;">Редагувати</a>
+        </div>
+      </div>
+
+      {% if plan.plan_sets %}
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--steel);">
+          <div class="kb-exercise-list">
+            {% for ps in plan.plan_sets %}
+            <div class="kb-exercise-row">
+              <span class="kb-exercise-name">{{ ps.exercise.name_ua }}</span>
+              <span class="kb-exercise-detail">{{ ps.number_approaches }} підх.</span>
+              <span class="kb-exercise-detail">× {{ ps.repeat_exercise }} повт.</span>
+              <span class="kb-exercise-weight">
+                {% if ps.weight and ps.weight.weight_value > 0 %}
+                  {{ ps.weight.weight_value | int }} кг
+                {% else %}
+                  Власна вага
+                {% endif %}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <p style="color: var(--chalk-dim); font-size: 0.85rem; margin: 1rem 0 0;">
+          Вправи до плану ще не додані.
+        </p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="kb-empty">
+    <h3>Планів ще немає</h3>
+    <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">
+      Створи перший план, щоб структурувати свої тренування.
+    </p>
+    <a href="#new" class="kb-btn kb-btn--primary">Створити план</a>
+  </div>
+{% endif %}
+
+{% endblock %}

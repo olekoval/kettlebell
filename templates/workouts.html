@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Журнал тренувань — Kettlebell Tracker{% endblock %}
+
+{% block content %}
+
+<div class="kb-section-header">
+  <div>
+    <span class="kb-eyebrow">Виконані сесії</span>
+    <h1 style="margin:0;">Журнал тренувань</h1>
+  </div>
+  <a href="{{ url_for('workouts_new') }}" class="kb-btn kb-btn--primary" style="margin-left:auto;">
+    + Записати
+  </a>
+</div>
+
+{% if pagination.items %}
+  <div style="background: var(--forge); border: 1px solid var(--steel); border-radius: var(--radius-lg); overflow: hidden;">
+    <table class="kb-table">
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>План</th>
+          <th>Підходів</th>
+          <th>Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for workout in pagination.items %}
+        <tr>
+          <td>
+            <span style="color: var(--chalk);">{{ workout.actual_date.strftime('%d.%m.%Y') }}</span>
+            <br>
+            <span style="font-size: 0.78rem; color: var(--chalk-dim);">{{ workout.actual_date.strftime('%H:%M') }}</span>
+          </td>
+          <td>
+            {% if workout.workout_plan %}
+              <span style="color: var(--chalk);">{{ workout.workout_plan.title }}</span>
+            {% else %}
+              <span style="color: var(--chalk-dim);">Вільне тренування</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-family: var(--font-display); color: var(--amber);">
+              {{ workout.actual_sets | length }}
+            </span>
+          </td>
+          <td>
+            {% if workout.status %}
+              <span class="kb-badge kb-badge--{{ workout.status }}">
+                {% if workout.status == 'completed' %}Виконано
+                {% elif workout.status == 'skipped' %}Пропущено
+                {% else %}{{ workout.status }}{% endif %}
+              </span>
+            {% else %}
+              <span style="color: var(--chalk-dim);">—</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <a href="{{ url_for('workout_detail', workout_id=workout.id) }}"
+               class="kb-btn kb-btn--ghost" style="padding: 0.35rem 0.9rem; font-size: 0.75rem;">
+              Детально →
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+  <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem; flex-wrap: wrap;">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('workouts', page=pagination.prev_num) }}" class="kb-btn kb-btn--ghost">← Попередня</a>
+    {% endif %}
+
+    {% for p in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+      {% if p %}
+        <a href="{{ url_for('workouts', page=p) }}"
+           class="kb-btn {% if p == pagination.page %}kb-btn--primary{% else %}kb-btn--ghost{% endif %}"
+           style="min-width: 40px; justify-content: center;">
+          {{ p }}
+        </a>
+      {% else %}
+        <span style="display:flex; align-items:center; color: var(--chalk-dim); padding: 0 0.25rem;">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if pagination.has_next %}
+      <a href="{{ url_for('workouts', page=pagination.next_num) }}" class="kb-btn kb-btn--ghost">Наступна →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+{% else %}
+  <div class="kb-empty">
+    <h3>Журнал порожній</h3>
+    <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">
+      Запиши перше тренування — і прогрес почне накопичуватись.
+    </p>
+    <a href="{{ url_for('workouts_new') }}" class="kb-btn kb-btn--primary">
+      Записати тренування
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}

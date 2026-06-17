@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Kettlebell Tracker{% endblock %}</title>
+
+  <!-- Google Fonts: Oswald (display) + Inter (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 CSS (utility fallback only — layout driven by our CSS Grid) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="kb-navbar">
+    <a href="{{ url_for('index') }}" class="kb-brand">
+      <span class="kb-brand-icon" aria-hidden="true"></span>
+      Kettlebell Tracker
+    </a>
+
+    <ul class="kb-nav-links">
+      <li>
+        <a href="{{ url_for('index') }}"
+           class="{% if request.endpoint == 'index' %}active{% endif %}">
+          Головна
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('plans') }}"
+           class="{% if request.endpoint == 'plans' %}active{% endif %}">
+          План тренувань
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('workouts') }}"
+           class="{% if request.endpoint == 'workouts' %}active{% endif %}">
+          Журнал виконаних
+        </a>
+      </li>
+      <li>
+        <a href="/dash/"
+           class="{% if '/dash/' in request.path %}active{% endif %}">
+          Дашборд
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="kb-page">
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="kb-flash kb-flash--{{ category }}" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="kb-footer">
+    Kettlebell Progress Tracker &mdash; тренуйся з залізом, рахуй прогрес
+  </footer>
+
+  <!-- Bootstrap JS bundle (needed for dropdowns/collapse if used) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmKXt/MKd+JKFYlFMhzVYTRnKMq"
+          crossorigin="anonymous"></script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
