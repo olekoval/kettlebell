@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_formhelpers.html" import render_field, render_field_bare %}
+
+{% block title %}Новий план тренування — Kettlebell Tracker{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">Новий план тренування</h1>
+
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="row">
+        {{ render_field(form.title, col_class="col-md-6") }}
+        {{ render_field(form.planned_date, col_class="col-md-3") }}
+        {{ render_field(form.status, col_class="col-md-3") }}
+    </div>
+
+    <h2 class="h5 mt-4 mb-2">Вправи плану</h2>
+    <p class="text-muted small">
+        Заповніть стільки рядків, скільки потрібно — порожні рядки (без обраної вправи) буде проігноровано при збереженні.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th style="min-width:220px">Вправа</th>
+                    <th style="min-width:160px">Вага</th>
+                    <th style="min-width:110px">Підходів</th>
+                    <th style="min-width:130px">Повторень/підхід</th>
+                    <th style="min-width:130px">Відпочинок, сек</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for set_form in form.plan_sets %}
+                <tr>
+                    <td>{{ render_field_bare(set_form.exercise_id) }}</td>
+                    <td>{{ render_field_bare(set_form.weight_id) }}</td>
+                    <td>{{ render_field_bare(set_form.number_approaches) }}</td>
+                    <td>{{ render_field_bare(set_form.repeat_exercise) }}</td>
+                    <td>{{ render_field_bare(set_form.rest_time) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mb-3">
+        {{ form.add_exercise(class="btn btn-outline-primary btn-sm") }}
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('plans') }}" class="btn btn-outline-secondary">Скасувати</a>
+    </div>
+</form>
+{% endblock %}

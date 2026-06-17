@@ -8,7 +8,7 @@
     <span class="kb-eyebrow">Заплановані сесії</span>
     <h1 style="margin:0;">Плани тренувань</h1>
   </div>
-  <a href="{{ url_for('plans') }}#new" class="kb-btn kb-btn--primary" style="margin-left:auto;">
+  <a href="{{ url_for('plans_new') }}" class="kb-btn kb-btn--primary" style="margin-left:auto;">
     + Новий план
   </a>
 </div>
@@ -76,7 +76,7 @@
     <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">
       Створи перший план, щоб структурувати свої тренування.
     </p>
-    <a href="#new" class="kb-btn kb-btn--primary">Створити план</a>
+    <a href="{{ url_for('plans_new') }}" class="kb-btn kb-btn--primary">Створити план</a>
   </div>
 {% endif %}
 

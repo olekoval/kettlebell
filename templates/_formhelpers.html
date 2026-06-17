@@ -1,0 +1,40 @@
+{# templates/_formhelpers.html
+   Допоміжні макроси для рендерингу полів WTForms у стилі Bootstrap 5. #}
+
+{% macro render_field(field, label_visible=true, col_class="") %}
+<div class="{{ col_class }} mb-3">
+    {% if label_visible %}
+        {{ field.label(class="form-label") }}
+    {% endif %}
+
+    {% if field.type == "SelectField" %}
+        {{ field(class="form-select" + (" is-invalid" if field.errors else ""), **kwargs) }}
+    {% elif field.type == "TextAreaField" %}
+        {{ field(class="form-control" + (" is-invalid" if field.errors else ""), rows=3, **kwargs) }}
+    {% elif field.type in ("SubmitField",) %}
+        {{ field(class="btn btn-primary", **kwargs) }}
+    {% else %}
+        {{ field(class="form-control" + (" is-invalid" if field.errors else ""), **kwargs) }}
+    {% endif %}
+
+    {% for error in field.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro render_field_bare(field) %}
+{# Те саме, але без обгортки div/label — для використання всередині <td> таблиці. #}
+    {% if field.type == "SelectField" %}
+        {{ field(class="form-select form-select-sm" + (" is-invalid" if field.errors else "")) }}
+    {% elif field.type == "BooleanField" %}
+        <div class="form-check d-flex justify-content-center">
+            {{ field(class="form-check-input" + (" is-invalid" if field.errors else "")) }}
+        </div>
+    {% else %}
+        {{ field(class="form-control form-control-sm" + (" is-invalid" if field.errors else "")) }}
+    {% endif %}
+    {% for error in field.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+{% endmacro %}

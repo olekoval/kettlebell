@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_formhelpers.html" import render_field, render_field_bare %}
+
+{% block title %}Нове тренування — Kettlebell Tracker{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">Запис виконаного тренування</h1>
+
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="row align-items-end">
+        <div class="col-md-4">
+            {{ render_field(form.workout_plan_id) }}
+        </div>
+        <div class="col-md-2 mb-3">
+            {{ form.load_plan(class="btn btn-outline-secondary btn-sm w-100") }}
+        </div>
+        {{ render_field(form.actual_date, col_class="col-md-3") }}
+        {{ render_field(form.status, col_class="col-md-3") }}
+    </div>
+    <p class="text-muted small mt-n2">
+        Оберіть план і натисніть «{{ form.load_plan.label.text }}», щоб підставити його вправи в таблицю нижче.
+    </p>
+
+    {{ render_field(form.notes) }}
+
+    <h2 class="h5 mt-4 mb-2">Виконані підходи</h2>
+    <p class="text-muted small">
+        Заповніть стільки рядків, скільки підходів виконано. Знімайте позначку «Виконано» з вправ, які за фактом
+        пропущені — такі рядки не зберігаються; так само ігноруються рядки без обраної вправи.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th style="min-width:90px" class="text-center">Виконано</th>
+                    <th style="min-width:220px">Вправа</th>
+                    <th style="min-width:160px">Вага</th>
+                    <th style="min-width:110px">Підходів</th>
+                    <th style="min-width:130px">Повторень</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fact_form in form.actual_sets %}
+                <tr>
+                    <td>{{ render_field_bare(fact_form.completed) }}</td>
+                    <td>{{ render_field_bare(fact_form.exercise_id) }}</td>
+                    <td>{{ render_field_bare(fact_form.weight_id) }}</td>
+                    <td>{{ render_field_bare(fact_form.number_approaches) }}</td>
+                    <td>{{ render_field_bare(fact_form.repeat_exercise) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mb-3">
+        {{ form.add_set(class="btn btn-outline-primary btn-sm") }}
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('workouts') }}" class="btn btn-outline-secondary">Скасувати</a>
+    </div>
+</form>
+{% endblock %}

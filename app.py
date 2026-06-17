@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_migrate import Migrate
-from models import db, Workout, WorkoutFact, WorkoutPlan
+from models import db, Workout, WorkoutFact, WorkoutPlan, WorkoutPlanSet
 from seed import register_seed_commands
+from forms import WorkoutForm, WorkoutPlanForm
 
 app = Flask(__name__)
 
@@ -79,6 +80,40 @@ def plans():
     return render_template('plans.html', plans=all_plans)
 
 
+@app.route('/plans/new', methods=['GET', 'POST'])
+def plans_new():
+    """Форма створення нового плану тренування (план + заплановані вправи)."""
+    form = WorkoutPlanForm()
+
+    # Кнопка "+ Додати ще вправу" — лише дописуємо порожній рядок і
+    # повертаємо ту саму форму з усім уже введеним, без звернення до БД.
+    if request.method == 'POST' and 'add_exercise' in request.form:
+        form.plan_sets.append_entry()
+        return render_template('plan_form.html', form=form)
+
+    if form.validate_on_submit():
+        plan = WorkoutPlan(
+            title=form.title.data,
+            planned_date=form.planned_date.data,
+            status=form.status.data,
+        )
+        for set_form in form.plan_sets:
+            if not set_form.is_filled():
+                continue  # порожній рядок без обраної вправи — пропускаємо
+            plan.plan_sets.append(WorkoutPlanSet(
+                exercise_id=set_form.exercise_id.data,
+                weight_id=set_form.weight_id.data or None,
+                number_approaches=set_form.number_approaches.data or 1,
+                repeat_exercise=set_form.repeat_exercise.data or 0,
+                rest_time=set_form.rest_time.data,
+            ))
+        db.session.add(plan)
+        db.session.commit()
+        flash(f'План «{plan.title}» успішно створено.', 'success')
+        return redirect(url_for('plans'))
+    return render_template('plan_form.html', form=form)
+
+
 @app.route('/workouts')
 def workouts():
     """Журнал виконаних тренувань."""
@@ -94,10 +129,56 @@ def workouts():
 
 @app.route('/workouts/new', methods=['GET', 'POST'])
 def workouts_new():
-    """Форма додавання нового виконаного тренування (заглушка)."""
-    # Full implementation comes in the next iteration (forms + WorkoutFact creation)
-    flash('Форма запису тренування — в розробці.', 'info')
-    return redirect(url_for('index'))
+    """Форма реєстрації фактично виконаного тренування (+ підходи)."""
+    form = WorkoutForm()
+
+    # Кнопка "+ Додати ще підхід" — лише дописуємо порожній рядок і
+    # повертаємо ту саму форму з усім уже введеним, без звернення до БД.
+    if request.method == 'POST' and 'add_set' in request.form:
+        form.actual_sets.append_entry()
+        return render_template('workout_form.html', form=form)
+
+    # Кнопка "Підставити вправи з плану" — повністю замінює рядки
+    # actual_sets вправами з обраного плану (без звернення до БД).
+    if request.method == 'POST' and 'load_plan' in request.form:
+        plan = db.session.get(WorkoutPlan, form.workout_plan_id.data) if form.workout_plan_id.data else None
+        if plan and plan.plan_sets:
+            prefill = [
+                {
+                    'completed': True,
+                    'exercise_id': ps.exercise_id,
+                    'weight_id': ps.weight_id or 0,
+                    'number_approaches': ps.number_approaches,
+                    'repeat_exercise': ps.repeat_exercise,
+                }
+                for ps in plan.plan_sets
+            ]
+            form.actual_sets.process(None, prefill)
+        else:
+            flash('У обраному плані ще немає запланованих вправ.', 'warning')
+        return render_template('workout_form.html', form=form)
+
+    if form.validate_on_submit():
+        workout = Workout(
+            workout_plan_id=form.workout_plan_id.data or None,
+            actual_date=form.actual_date.data,
+            notes=form.notes.data,
+            status=form.status.data,
+        )
+        for fact_form in form.actual_sets:
+            if not fact_form.is_filled():
+                continue  # порожній рядок без обраної вправи — пропускаємо
+            workout.actual_sets.append(WorkoutFact(
+                exercise_id=fact_form.exercise_id.data,
+                weight_id=fact_form.weight_id.data or None,
+                number_approaches=fact_form.number_approaches.data or 1,
+                repeat_exercise=fact_form.repeat_exercise.data or 0,
+            ))
+        db.session.add(workout)
+        db.session.commit()
+        flash('Тренування успішно збережено.', 'success')
+        return redirect(url_for('workout_detail', workout_id=workout.id))
+    return render_template('workout_form.html', form=form)
 
 
 @app.route('/workouts/<int:workout_id>')
