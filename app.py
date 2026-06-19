@@ -5,6 +5,10 @@ from models import db, Workout, WorkoutFact, WorkoutPlan, WorkoutPlanSet
 from seed import register_seed_commands
 from forms import WorkoutForm, WorkoutPlanForm
 
+
+# 1. Імпортуємо функцію ініціалізації дашборду
+from dashboard import init_dashboard
+
 app = Flask(__name__)
 
 # Database connection
@@ -19,6 +23,8 @@ migrate = Migrate(app, db)
 # Register seed CLI
 register_seed_commands(app)
 
+# 🌟 Ініціалізуємо Dash всередині Flask
+init_dashboard(app)
 
 # ─── Routes ────────────────────────────────────────────────────────────────────
 
@@ -113,7 +119,61 @@ def plans_new():
         return redirect(url_for('plans'))
     return render_template('plan_form.html', form=form)
 
+@app.route('/plans/<int:plan_id>/edit', methods=['GET', 'POST'])
+def plans_edit(plan_id):
+    """Редагування існуючого плану тренування."""
+    plan = db.get_or_404(WorkoutPlan, plan_id)
+    
+    # Передаємо об'єкт плану в конструктор форми, 
+    # щоб WTForms автоматично заповнив базові поля (title, planned_date, status)
+    form = WorkoutPlanForm(obj=plan)
 
+    # Кнопка "+ Додати ще вправу"
+    if request.method == 'POST' and 'add_exercise' in request.form:
+        form.plan_sets.append_entry()
+        return render_template('plan_form.html', form=form, is_edit=True, plan=plan)
+
+    # Якщо форма пройшла валідацію (клік на "Зберегти")
+    if form.validate_on_submit():
+        plan.title = form.title.data
+        plan.planned_date = form.planned_date.data
+        plan.status = form.status.data
+
+        # Очищуємо старі вправи плану, щоб записати оновлений список
+        plan.plan_sets.clear()
+        
+        for set_form in form.plan_sets:
+            if not set_form.is_filled():
+                continue
+            plan.plan_sets.append(WorkoutPlanSet(
+                exercise_id=set_form.exercise_id.data,
+                weight_id=set_form.weight_id.data or None,
+                number_approaches=set_form.number_approaches.data or 1,
+                repeat_exercise=set_form.repeat_exercise.data or 0,
+                rest_time=set_form.rest_time.data,
+            ))
+            
+        db.session.commit()
+        flash(f'План «{plan.title}» успішно оновлено.', 'success')
+        return redirect(url_for('plans'))
+
+    # Для GET-запиту: якщо форма щойно відкрита і FieldList порожній,
+    # заповнюємо його існуючими вправами з бази
+    if request.method == 'GET' and not form.plan_sets.entries:
+        for ps in plan.plan_sets:
+            form.plan_sets.append_entry({
+                'exercise_id': ps.exercise_id,
+                'weight_id': ps.weight_id or 0,
+                'number_approaches': ps.number_approaches,
+                'repeat_exercise': ps.repeat_exercise,
+                'rest_time': ps.rest_time
+            })
+        # Якщо в плані було менше 4 вправ, WTForms все одно може докинути порожні до min_entries.
+        # Але оскільки ми передали дані, краще залишити як є.
+
+    return render_template('plan_form.html', form=form, is_edit=True, plan=plan)
+
+    
 @app.route('/workouts')
 def workouts():
     """Журнал виконаних тренувань."""
