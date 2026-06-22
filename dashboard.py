@@ -4,6 +4,7 @@ import pandas as pd
 from sqlalchemy import case
 from models import db, WorkoutFact, Exercise, Workout, Weight
 import plotly.graph_objects as go 
+import dash_bootstrap_components as dbc
 
 
 def get_dashboard_data(server):
@@ -62,27 +63,73 @@ def init_dashboard(server):
         __name__,
         server=server,
         url_base_pathname='/dash/',
+        external_stylesheets=[dbc.themes.DARKLY],
         suppress_callback_exceptions=True
     )
 
-    dash_app.layout = html.Div(className="kb-container", children=[
-        html.Div(className="kb-header-card", children=[
-            html.H1("Аналітика тренувань", className="kb-dashboard-title"),
-            html.P("Візуалізація вашого прогресу та загального тоннажу", className="kb-dashboard-subtitle")
-        ]),
+    # ВИПРАВЛЕНО: Зсув відступів тепер строго 4 пробіли
+    dash_app.layout = dbc.Container(
+        fluid=True, # розтягує контейнер на всю ширину
+        className="p-4", # вбудований відступ Bootstrap (padding)
+        children=[
+            # Шапка (Header)
+            dbc.Row(
+                dbc.Col(
+                    html.Div(
+                        className="kb-header-card", # твій кастомний стиль для рамки
+                        children=[
+                            html.H1("Аналітика тренувань", className="kb-dashboard-title m-0"),
+                            html.P("Візуалізація вашого прогресу та загального тоннажу", className="text-muted mt-2")
+                        ]
+                    ),
+                    width=12
+                ),
+                className="mb-4"
+            ),
 
-        html.Div([
-            dcc.DatePickerRange(
-                id="date-picker",
-                min_date_allowed=pd.to_datetime("2024-01-01"),
-                max_date_allowed=pd.to_datetime("2030-12-31"),
-                start_date=pd.to_datetime("2025-01-01"),
-                end_date=pd.to_datetime("2026-12-31"),
-                style={'marginBottom': '20px'}
+            # Селектор дат (DatePicker)
+            dbc.Row(
+                dbc.Col(
+                    html.Div([
+                        dcc.DatePickerRange(
+                            id="date-picker",
+                            min_date_allowed=pd.to_datetime("2024-01-01"),
+                            max_date_allowed=pd.to_datetime("2030-12-31"),
+                            start_date=pd.to_datetime("2025-01-01"),
+                            end_date=pd.to_datetime("2026-12-31"),
+                            # ДОДАНО: Базове виправлення стилю відображення для темної теми
+                            style={
+                                "border": "1px solid var(--steel)",
+                                "borderRadius": "4px",
+                                "background": "var(--iron)"
+                            }
+                        )
+                    ], className="text-center"),
+                    width=12
+                ),
+                className="mb-4"
+            ),
+
+            # Графік всередині Bootstrap Картки (Card)
+            dbc.Row(
+                dbc.Col(
+                    dbc.Card(
+                        dbc.CardBody([
+                            # ДОДАНО: Спінер завантаження графіка для кращого UX
+                            dbc.Spinner(
+                                dcc.Graph(id="pie-chart"),
+                                color="warning" # буде під колір твоєї міді/amber
+                            )
+                        ]),
+                        className="kb-card" # застосує твій стиль з forge-bg та steel-border
+                    ),
+                    width=12,
+                    lg=8, # на великих екранах графік займе 8 з 12 колонок
+                    className="mx-auto" # центрування
+                )
             )
-        ], style={'textAlign': 'center', 'margin': '20px'}),
-        dcc.Graph(id="pie-chart"),
-    ])
+        ]
+    )
 
     @dash_app.callback(
         Output("pie-chart", "figure"),
@@ -90,15 +137,26 @@ def init_dashboard(server):
         Input("date-picker", "end_date")
     )
     def generate_chart(start_date, end_date):
-        # Отримуємо свіжі дані при кожній зміні дати або оновленні сторінки
         df = get_dashboard_data(server)
+
+        empty_layout_kwargs = {
+            "paper_bgcolor": "rgba(0,0,0,0)",
+            "plot_bgcolor": "rgba(0,0,0,0)",
+            "font_color": "#b8b4ae", 
+            "font_family": "Oswald, sans-serif"
+        }
 
         if df.empty:
             fig = go.Figure()
-            fig.update_layout(title_text="У базі даних ще немає записів про тренування")
+            fig.update_layout(title_text="У базі даних ще немає записів про тренування", **empty_layout_kwargs)
             return fig
 
-        # Додаємо 1 день до кінцевої дати, щоб врахувати час тренувань протягом останнього дня
+        # ЗАХИСТ: Якщо користувач стер дати в інтерфейсі, ставимо мінімальну/максимальну дату з наявних в БД
+        if not start_date:
+            start_date = df["actual_date"].min()
+        if not end_date:
+            end_date = df["actual_date"].max()
+
         end_date_dt = pd.to_datetime(end_date) + pd.Timedelta(days=1)
         filtered_df = df[
             (df["actual_date"] >= pd.to_datetime(start_date)) & 
@@ -107,7 +165,7 @@ def init_dashboard(server):
         
         if filtered_df.empty:
             fig = go.Figure()
-            fig.update_layout(title_text="За вказаний період тренувань не знайдено")
+            fig.update_layout(title_text="За вказаний період тренувань не знайдено", **empty_layout_kwargs)
             return fig
 
         df_grouped = filtered_df.groupby("name_en", as_index=False)["total_weight"].sum()
@@ -115,11 +173,18 @@ def init_dashboard(server):
         fig = go.Figure(data=[go.Pie(
             labels=df_grouped["name_en"],
             values=df_grouped["total_weight"],
-            hole=.3
+            hole=.3,
+            marker=dict(colors=["#e8a020", "#374151", "#2c2c2c", "#b8b4ae", "#9e6c12"])
         )])
         
-        fig.update_layout(title_text="Розподіл загального тоннажу за вправами (кг)")
+        fig.update_layout(
+            title_text="Розподіл загального тоннажу за вправами (кг)",
+            paper_bgcolor="rgba(0,0,0,0)", 
+            plot_bgcolor="rgba(0,0,0,0)",
+            font_color="#f0ede8",           
+            font_family="Oswald, sans-serif", 
+            template="plotly_dark"          
+        )
         return fig
 
-    # КРИТИЧНО: Цей рядок має строго 4 пробіли від краю (рівень функції init_dashboard)
     return dash_app

@@ -522,3 +522,16 @@ a:hover { color: var(--amber-dim); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
 }
+
+/* Інтеграція DatePickerRange у темну тему */
+.DateInput, .DateInput_input, .SingleDatePickerInput, .DatePickerRange {
+  background-color: var(--iron) !important;
+  color: var(--chalk) !important;
+  font-family: var(--font-body);
+}
+.DateInput_input {
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
+  padding: 0.6rem 0.9rem !important;
+  text-align: center;
+}
