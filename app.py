@@ -205,7 +205,7 @@ def workouts_new():
         if plan and plan.plan_sets:
             prefill = [
                 {
-                    'completed': True,
+                    'completed': False,
                     'exercise_id': ps.exercise_id,
                     'weight_id': ps.weight_id or 0,
                     'number_approaches': ps.number_approaches,
@@ -226,18 +226,30 @@ def workouts_new():
             status=form.status.data,
         )
         for fact_form in form.actual_sets:
+            # Якщо користувач НЕ обрав вправу АБО НЕ поставив галочку — повністю ігноруємо цей рядок
             if not fact_form.is_filled():
-                continue  # порожній рядок без обраної вправи — пропускаємо
+                continue  
+            
+            # Логіка визначення ID ваги:
+            # Якщо обрано "— без ваги —" (значення 0), записуємо ID 1 ("Власна вага")
+            chosen_weight_id = fact_form.weight_id.data
+            if chosen_weight_id == 0 or chosen_weight_id is None:
+                final_weight_id = 1
+            else:
+                final_weight_id = chosen_weight_id
+
+            # Записуємо в БД
             workout.actual_sets.append(WorkoutFact(
                 exercise_id=fact_form.exercise_id.data,
-                weight_id=fact_form.weight_id.data or None,
-                number_approaches=fact_form.number_approaches.data or 1,
-                repeat_exercise=fact_form.repeat_exercise.data or 0,
+                weight_id=final_weight_id,  # Тепер тут завжди буде або ID гирі, або 1 (Власна вага)
+                number_approaches=fact_form.number_approaches.data if fact_form.number_approaches.data is not None else 1,
+                repeat_exercise=fact_form.repeat_exercise.data if fact_form.repeat_exercise.data is not None else 0,
             ))
         db.session.add(workout)
         db.session.commit()
         flash('Тренування успішно збережено.', 'success')
         return redirect(url_for('workout_detail', workout_id=workout.id))
+
     return render_template('workout_form.html', form=form)
 
 
@@ -247,7 +259,10 @@ def workout_detail(workout_id):
     workout = db.get_or_404(Workout, workout_id)
     return render_template('workout_detail.html', workout=workout)
 
-
+@app.route('/dashboard-route')
+def open_dashboard():
+    """Динамічний ендпоінт для кнопки дашборду без хардкоду"""
+    return redirect('/dash/')
 # ─── Run ───────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':

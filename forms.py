@@ -146,7 +146,9 @@ class WorkoutFactForm(FlaskForm):
     class Meta:
         csrf = False
 
-    completed = BooleanField("Виконано", default=True)
+    # За замовчуванням галочка знята
+    completed = BooleanField("Виконано", default=False)
+    
     exercise_id = SelectField(
         "Вправа",
         coerce=int,
@@ -157,14 +159,13 @@ class WorkoutFactForm(FlaskForm):
         coerce=int,
         validators=[Optional()],
     )
+    # Змінюємо валідатори на Optional, щоб порожні підходи не блокували всю форму
     number_approaches = IntegerField(
         "Підходів виконано",
-        default=1,
         validators=[Optional(), NumberRange(min=0, max=50, message="0–50")],
     )
     repeat_exercise = IntegerField(
         "Повторень виконано",
-        default=0,
         validators=[Optional(), NumberRange(min=0, max=200, message="0–200")],
     )
 
@@ -174,11 +175,10 @@ class WorkoutFactForm(FlaskForm):
         self.weight_id.choices = [(EMPTY_CHOICE, "— без ваги —")] + weight_choices()
 
     def is_filled(self):
-        """Рядок зберігається лише якщо обрано вправу І позначено «Виконано»."""
+        """Рядок зберігається лише якщо обрано вправу І поставлено галочку «Виконано»."""
         has_exercise = bool(self.exercise_id.data) and self.exercise_id.data != EMPTY_CHOICE
-        return has_exercise and self.completed.data
-
-
+        return has_exercise and bool(self.completed.data)
+        
 class WorkoutForm(FlaskForm):
     """Форма реєстрації фактично виконаного тренування зі списком підходів."""
 
